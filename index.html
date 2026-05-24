@@ -105,6 +105,19 @@ h2.D .g{color:var(--amber-l)}
 .opp-banner p{font-size:.93rem;line-height:1.82;color:rgba(184,168,152,.9);font-weight:400}
 .opp-banner p strong{color:var(--amber-l)}
 
+/* ── GOAL BAR ── */
+.goal-wrap{margin:0 0 2.2rem;padding:1.6rem;background:rgba(217,61,10,.07);border:1px solid rgba(217,61,10,.2);position:relative;overflow:hidden}
+.goal-wrap::before{content:'';position:absolute;top:-40px;right:-40px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(245,90,26,.1),transparent 70%);pointer-events:none}
+.goal-top{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem}
+.goal-title{font-family:'Syne',sans-serif;font-size:.58rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--fire2)}
+.goal-amount{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,5vw,2.4rem);font-weight:900;color:var(--cream);line-height:1}
+.goal-amount small{font-family:'Syne',sans-serif;font-size:.38em;font-weight:500;color:var(--amber-l);vertical-align:middle;margin-left:.3rem;letter-spacing:.06em}
+.goal-bar-outer{height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden;margin-bottom:.8rem}
+.goal-bar-fill{height:100%;border-radius:2px;background:linear-gradient(to right,var(--fire),var(--fire2),var(--amber-l));width:0;transition:width 1.6s cubic-bezier(.4,0,.2,1)}
+.goal-breakdown{display:flex;flex-wrap:wrap;gap:.4rem .8rem}
+.goal-item{font-size:.72rem;color:var(--muted);display:flex;align-items:center;gap:.35rem}
+.goal-item::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--fire2);opacity:.5;flex-shrink:0}
+
 /* ── TIERS ── */
 .tiers{display:grid;gap:.8rem;margin-top:2rem}
 @media(min-width:600px){.tiers{grid-template-columns:1fr 1fr}}
@@ -217,9 +230,9 @@ footer span{color:var(--fire2)}
     </div>
   </div>
   <div class="hero-stats">
-    <div class="hstat"><div class="n">₹10L</div><div class="l">Setup Goal</div></div>
-    <div class="hstat"><div class="n">Mid July</div><div class="l">Launch Date</div></div>
-    <div class="hstat"><div class="n">4</div><div class="l">Backer Tiers</div></div>
+    <div class="hstat"><div class="n">₹10L</div><div class="l">Raising</div></div>
+    <div class="hstat"><div class="n">Mid July</div><div class="l">Launch</div></div>
+    <div class="hstat"><div class="n">4 Tiers</div><div class="l">₹2K – ₹1L+</div></div>
   </div>
 </section>
 
@@ -285,6 +298,29 @@ footer span{color:var(--fire2)}
     <p class="lead r d2" style="max-width:580px;margin-bottom:.5rem">Every tier comes with real, tangible things — meals, cashback, access, recognition. This isn't a GoFundMe. It's an invitation to be part of something before the rest of Bangalore finds out about it.</p>
 
     <div class="tiers r d2" id="tiers-grid">
+
+      <!-- GOAL BAR -->
+      <div class="goal-wrap" style="grid-column:1/-1">
+        <div class="goal-top">
+          <div>
+            <div class="goal-title">Community Setup Goal</div>
+            <div class="goal-amount">₹10,00,000 <small>target</small></div>
+          </div>
+          <div style="text-align:right">
+            <div class="goal-title" style="color:var(--amber-l)">Every rupee goes directly into</div>
+            <div style="font-size:.82rem;color:var(--soft);margin-top:.2rem">building the kitchen, equipment &amp; launch</div>
+          </div>
+        </div>
+        <div class="goal-bar-outer"><div class="goal-bar-fill" id="gf"></div></div>
+        <div class="goal-breakdown">
+          <span class="goal-item">Kitchen setup</span>
+          <span class="goal-item">Equipment &amp; appliances</span>
+          <span class="goal-item">Packaging &amp; branding</span>
+          <span class="goal-item">Launch operations</span>
+          <span class="goal-item">Working capital</span>
+          <span class="goal-item">Community events</span>
+        </div>
+      </div>
 
       <!-- TIER 1 -->
       <div class="tier">
@@ -460,9 +496,6 @@ footer span{color:var(--fire2)}
         <div class="pm">UPI</div>
         <div class="prow"><label>UPI ID</label><span class="val">89.raghav-1@okaxis</span></div>
         <div class="prow"><label>Works with</label><span class="note">GPay · PhonePe · Paytm · Any UPI</span></div>
-        <div style="margin-top:1rem;padding:.8rem;background:rgba(42,155,94,.08);border:1px solid rgba(42,155,94,.2)">
-          <p style="font-size:.75rem;color:rgba(42,155,94,.9);line-height:1.6">✓ After transfer, message Raghav on WhatsApp with your name + tier. He responds personally to every backer.</p>
-        </div>
       </div>
 
       <div class="pcard">
@@ -502,6 +535,8 @@ const nav=document.getElementById('nav');
 window.addEventListener('scroll',()=>nav.classList.toggle('s',scrollY>60),{passive:true});
 const obs=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('v');obs.unobserve(x.target)}}),{threshold:0.07});
 document.querySelectorAll('.r').forEach(el=>obs.observe(el));
+const gf=document.getElementById('gf');
+if(gf){const go=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting){gf.style.width='18%';go.unobserve(x.target)}}),{threshold:.5});go.observe(gf);}
 function openLB(src){document.getElementById('lb-img').src=src;document.getElementById('lb').classList.add('open');document.body.style.overflow='hidden'}
 function closeLB(){document.getElementById('lb').classList.remove('open');document.body.style.overflow=''}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLB()});
