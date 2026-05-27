@@ -758,16 +758,178 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
 
 <a href="https://wa.me/919987015874" target="_blank" class="wa-float" title="Chat with Raghav">💬</a>
 
+<!-- ── FIREBASE SDK (v9 modular, loaded as ES module) ───────────────────── -->
+<script type="module">
+  import { initializeApp }       from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import { getAnalytics }        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js';
+  import {
+    getDatabase, ref, push, onValue, serverTimestamp
+  } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+
+  // ── CONFIG ────────────────────────────────────────────────────────────────
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCqrDq3UQhJzrKAkpOa2yEycNkT-sbZ46Y",
+    authDomain:        "spicy-studio.firebaseapp.com",
+    databaseURL:       "https://spicy-studio-default-rtdb.firebaseio.com",
+    projectId:         "spicy-studio",
+    storageBucket:     "spicy-studio.firebasestorage.app",
+    messagingSenderId: "265709381184",
+    appId:             "1:265709381184:web:67365535614fde6ab2e1a5",
+    measurementId:     "G-K7SCNEDPTD"
+  };
+
+  const app       = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const db        = getDatabase(app);
+  const wallRef   = ref(db, 'dishes'); // all memories live here
+
+  // ── HELPERS ───────────────────────────────────────────────────────────────
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function relativeTime(ts) {
+    const diff = Date.now() - ts;
+    const m = Math.floor(diff / 60000);
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (m < 2)  return 'just now';
+    if (m < 60) return m + 'm ago';
+    if (h < 24) return h + 'h ago';
+    if (d < 7)  return d + 'd ago';
+    return new Date(ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  }
+
+  function updateHeroCount(n) {
+    ['dishCountHero', 'heroWallCount'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = n;
+    });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('dwToast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  // ── REAL-TIME WALL LISTENER ───────────────────────────────────────────────
+  // onValue fires immediately with all existing data, then again on every change.
+  // This is what makes the wall live across all devices.
+  onValue(wallRef, (snapshot) => {
+    const wall  = document.getElementById('dishWall');
+    const count = document.getElementById('dishCount');
+
+    if (!snapshot.exists()) {
+      wall.innerHTML  = '<div class="dw-empty">No dishes yet — be the first to add yours. ✦</div>';
+      count.innerHTML = '';
+      updateHeroCount(0);
+      return;
+    }
+
+    // Firebase returns an object keyed by push-ID; convert to array newest-first
+    const entries = [];
+    snapshot.forEach(child => {
+      const d = child.val();
+      entries.push({ key: child.key, dish: d.dish, name: d.name || '', ts: d.ts || 0 });
+    });
+    entries.sort((a, b) => b.ts - a.ts); // newest first
+
+    wall.innerHTML =
+      '<div class="dw-wall">' +
+      entries.map((d, i) =>
+        `<div class="dw-chip${i === 0 ? ' new-entry' : ''}">
+           <div class="dish-name">${escHtml(d.dish)}</div>
+           <div class="dish-time">${d.name ? '— ' + escHtml(d.name) + ' &nbsp;·&nbsp; ' : ''}${relativeTime(d.ts)}</div>
+         </div>`
+      ).join('') +
+      '</div>';
+
+    count.innerHTML = `<span>${entries.length}</span> dishes shared on this wall`;
+    updateHeroCount(entries.length);
+  });
+
+  // ── ADD A DISH ────────────────────────────────────────────────────────────
+  async function addDish(dishVal, nameVal, btnEl, inputEl, nameInputEl, isFloat) {
+    if (!dishVal) { inputEl.focus(); return; }
+    if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Adding…'; }
+
+    try {
+      // push() creates a new unique child node in Firebase — safe for concurrent users
+      await push(wallRef, {
+        dish: dishVal,
+        name: nameVal || '',
+        ts:   Date.now()   // client timestamp; close enough for display
+      });
+
+      inputEl.value = '';
+      if (nameInputEl) nameInputEl.value = '';
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = isFloat ? 'Add ✦' : 'Add to the Wall ✦'; }
+
+      // Open WhatsApp with the dish name
+      const msg = encodeURIComponent(
+        'Hey Raghav 👋 We once bonded over ' + dishVal +
+        ' — just dropping it on the Spicy Studio memory wall!'
+      );
+      window.open('https://wa.me/919987015874?text=' + msg, '_blank');
+      showToast('Added to the wall + opening WhatsApp 🌶️');
+
+    } catch (err) {
+      console.error('Firebase write failed:', err);
+      showToast('Could not save — check your connection.');
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = isFloat ? 'Add ✦' : 'Add to the Wall ✦'; }
+    }
+  }
+
+  // ── PUBLIC SUBMIT FUNCTIONS (called from HTML onclick) ────────────────────
+  // Attach to window so non-module onclick attributes can reach them
+  window.submitDish = function () {
+    const input   = document.getElementById('dishInput');
+    const nameEl  = document.getElementById('dishNameInput');
+    const btn     = document.getElementById('dishSubmit');
+    addDish(input.value.trim(), nameEl ? nameEl.value.trim() : '', btn, input, nameEl, false);
+  };
+
+  window.submitFloatDish = function () {
+    const input  = document.getElementById('floatDishInput');
+    const nameEl = document.getElementById('floatNameInput');
+    const btn    = input.nextElementSibling;
+    addDish(input.value.trim(), nameEl ? nameEl.value.trim() : '', btn, input, nameEl, true);
+    closeDishPrompt();
+  };
+
+  // ── KEYBOARD SUPPORT ──────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    const di = document.getElementById('dishInput');
+    const dn = document.getElementById('dishNameInput');
+    const fi = document.getElementById('floatDishInput');
+    const fn = document.getElementById('floatNameInput');
+
+    if (di) di.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitDish(); });
+    if (dn) dn.addEventListener('keydown', e => { if (e.key === 'Enter' && di) di.focus(); });
+    if (fi) fi.addEventListener('keydown', e => { if (e.key === 'Enter') window.submitFloatDish(); });
+    if (fn) fn.addEventListener('keydown', e => { if (e.key === 'Enter' && fi) fi.focus(); });
+  });
+
+</script>
+
+<!-- ── NON-FIREBASE SCRIPTS (scroll, nav, sticky bar, floating prompt) ─── -->
 <script>
+// ── INTERSECTION OBSERVER (scroll reveal) ───────────────────────────────────
 const obs = new IntersectionObserver((entries) => {
   entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in'); });
 }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
-document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach((el, i) => {
+document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach((el) => {
   const siblings = el.parentElement.querySelectorAll('.reveal,.reveal-l,.reveal-r');
   const idx = Array.from(siblings).indexOf(el);
   el.style.transitionDelay = (idx * 0.07) + 's';
   obs.observe(el);
 });
+
+// ── NAV SCROLL EFFECT ────────────────────────────────────────────────────────
 window.addEventListener('scroll', () => {
   const nav = document.getElementById('nav');
   if (window.scrollY > 70) {
@@ -777,122 +939,7 @@ window.addEventListener('scroll', () => {
   }
 });
 
-// ── DISH WALL ──────────────────────────────────────────────────────────────
-const STORAGE_KEY = 'spicy_studio_dishes';
-const SHARED = true;
-const LS_KEY = 'ss_dishes_local';
-
-async function loadDishes() {
-  // Try shared storage first (works in Claude artifacts)
-  try {
-    const result = await window.storage.get(STORAGE_KEY, SHARED);
-    if (result && result.value) {
-      const dishes = JSON.parse(result.value);
-      // Merge with any local-only entries
-      const local = JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-      const merged = mergeByTs(dishes, local);
-      return merged;
-    }
-  } catch(e) {}
-  // Fallback to localStorage
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) || '[]');
-  } catch(e) { return []; }
-}
-
-async function saveDishes(dishes) {
-  // Save to both
-  try { localStorage.setItem(LS_KEY, JSON.stringify(dishes)); } catch(e) {}
-  try { await window.storage.set(STORAGE_KEY, JSON.stringify(dishes), SHARED); } catch(e) {}
-}
-
-function mergeByTs(a, b) {
-  const map = {};
-  [...a, ...b].forEach(d => { map[d.ts] = d; });
-  return Object.values(map).sort((x,y) => x.ts - y.ts);
-}
-
-function relativeTime(ts) {
-  const diff = Date.now() - ts;
-  const m = Math.floor(diff / 60000);
-  const h = Math.floor(diff / 3600000);
-  const d = Math.floor(diff / 86400000);
-  if (m < 2) return 'just now';
-  if (m < 60) return m + 'm ago';
-  if (h < 24) return h + 'h ago';
-  if (d < 7) return d + 'd ago';
-  return new Date(ts).toLocaleDateString('en-IN', {day:'numeric', month:'short'});
-}
-
-function renderWall(dishes) {
-  const wall = document.getElementById('dishWall');
-  const count = document.getElementById('dishCount');
-  updateHeroCount(dishes.length);
-  if (!dishes.length) {
-    wall.innerHTML = '<div class="dw-empty">No dishes yet — be the first to add yours. ✦</div>';
-    count.innerHTML = '';
-    return;
-  }
-  const sorted = [...dishes].reverse();
-  wall.innerHTML = '<div class="dw-wall">' + sorted.map((d, i) =>
-    `<div class="dw-chip${i === 0 ? ' new-temp' : ''}">
-      <div class="dish-name">${escHtml(d.dish)}</div>
-      <div class="dish-time">${d.name ? '— ' + escHtml(d.name) + ' &nbsp;·&nbsp; ' : ''}${relativeTime(d.ts)}</div>
-    </div>`
-  ).join('') + '</div>';
-  count.innerHTML = `<span>${dishes.length}</span> dishes shared on this wall`;
-}
-
-function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-function showToast(msg) {
-  const t = document.getElementById('dwToast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-async function submitDish() {
-  const input = document.getElementById('dishInput');
-  const btn = document.getElementById('dishSubmit');
-  const val = input.value.trim();
-  if (!val) { input.focus(); return; }
-  btn.disabled = true;
-  btn.textContent = 'Adding…';
-
-  // Save to shared wall
-  const dishes = await loadDishes();
-  const nameEl = document.getElementById('dishNameInput');
-  const name = nameEl ? nameEl.value.trim() : '';
-  dishes.push({ dish: val, name: name, ts: Date.now() });
-  await saveDishes(dishes);
-  input.value = '';
-  if (nameEl) nameEl.value = '';
-  renderWall(dishes);
-  setTimeout(() => {
-    const first = document.querySelector('.dw-chip');
-    if (first) { first.classList.add('new-entry'); setTimeout(()=>first.classList.remove('new-entry'), 800); }
-  }, 50);
-
-  // Fire WhatsApp to Raghav with the dish name
-  const msg = encodeURIComponent('Hey Raghav 👋 We once bonded over ' + val + ' — just dropping it on the Spicy Studio memory wall!');
-  window.open('https://wa.me/919987015874?text=' + msg, '_blank');
-
-  showToast('Added to the wall + opening WhatsApp 🌶️');
-  btn.disabled = false;
-  btn.textContent = 'Add to the Wall ✦';
-}
-
-// Enter key support
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('dishInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') submitDish();
-  });
-  loadDishes().then(d => { renderWall(d); updateHeroCount(d.length); });
-});
-// ── STICKY BAR ──────────────────────────────────────────────────────────────
+// ── STICKY BAR ───────────────────────────────────────────────────────────────
 let barDismissed = false;
 function dismissBar() {
   barDismissed = true;
@@ -908,61 +955,17 @@ window.addEventListener('scroll', () => {
   }
 }, { passive: true });
 
-// ── FLOATING DISH PROMPT ────────────────────────────────────────────────────
+// ── FLOATING DISH PROMPT ─────────────────────────────────────────────────────
 let promptDismissed = false;
-
 function closeDishPrompt() {
   promptDismissed = true;
   document.getElementById('dish-prompt').classList.remove('visible');
 }
-
-async function submitFloatDish() {
-  const input = document.getElementById('floatDishInput');
-  const val = input.value.trim();
-  if (!val) { input.focus(); return; }
-  const btn = input.nextElementSibling;
-  btn.textContent = '…';
-  const dishes = await loadDishes();
-  const floatName = (document.getElementById('floatNameInput') || {value:''}).value.trim();
-  dishes.push({ dish: val, name: floatName, ts: Date.now() });
-  await saveDishes(dishes);
-  renderWall(dishes);
-  updateHeroCount(dishes.length);
-  const msg = encodeURIComponent('Hey Raghav 👋 We once bonded over ' + val + ' — just dropping it on the Spicy Studio memory wall!');
-  window.open('https://wa.me/919987015874?text=' + msg, '_blank');
-  input.value = '';
-  btn.textContent = 'Add ✦';
-  closeDishPrompt();
-  showToast('Added to the wall 🌶️');
-}
-
-// Show prompt after 10 seconds
 setTimeout(() => {
   if (!promptDismissed) {
     document.getElementById('dish-prompt').classList.add('visible');
   }
 }, 10000);
-
-document.addEventListener('DOMContentLoaded', () => {
-  const fi = document.getElementById('floatDishInput');
-  if (fi) fi.addEventListener('keydown', e => { if (e.key === 'Enter') submitFloatDish(); });
-  const fn = document.getElementById('floatNameInput');
-  if (fn) fn.addEventListener('keydown', e => { if (e.key === 'Enter' && fi) fi.focus(); });
-  const dn = document.getElementById('dishNameInput');
-  const di = document.getElementById('dishInput');
-  if (dn && di) dn.addEventListener('keydown', e => { if (e.key === 'Enter') di.focus(); });
-  if (di) di.addEventListener('keydown', e => { if (e.key === 'Enter') submitDish(); });
-});
-
-// ── HERO COUNTER ────────────────────────────────────────────────────────────
-function updateHeroCount(n) {
-  ['dishCountHero','heroWallCount'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = n;
-  });
-}
-
-
 </script>
 
 
