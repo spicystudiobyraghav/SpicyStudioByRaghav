@@ -252,7 +252,8 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
 .dw-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
 @media(max-width:900px){.dw-wall{column-count:2}}
-@media(max-width:600px){.dw-wall{column-count:1}.dw-input-inner{border-radius:16px;flex-direction:column;padding:14px 16px}.dw-submit{width:100%;padding:12px}.dw-input{font-size:.95rem}}
+@media(max-width:600px){.dw-wall{column-count:1}.dw-input-inner{border-radius:16px;padding:14px 16px}.dw-dish-row{flex-wrap:nowrap}.dw-submit-wrap{display:block;margin-top:4px}.dw-submit-wrap .dw-submit{width:100%;padding:13px;border-radius:12px;font-size:.93rem}.dw-input{font-size:.95rem}}
+
 
 /* CAFÉ DREAM SECTION */
 #cafe-dream{background:var(--dark);padding:96px 0;position:relative;overflow:hidden}
@@ -676,12 +677,12 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
     </div>
 
     <div class="dw-input-wrap reveal">
-      <div class="dw-input-inner" style="border-radius:16px;flex-direction:column;align-items:stretch;gap:8px;padding:14px 16px">
+      <div class="dw-input-inner" style="border-radius:16px;flex-direction:column;align-items:stretch;gap:10px;padding:16px 18px 14px">
         <input class="dw-input" id="dishNameInput" type="text" placeholder="Your name (optional)" maxlength="40" autocomplete="off" style="font-size:.88rem;border-bottom:1px solid var(--border);padding-bottom:10px">
-        <div style="display:flex;gap:10px;align-items:center">
-          <input class="dw-input" id="dishInput" type="text" placeholder="The dish that brought us together…" maxlength="80" autocomplete="off">
-          <button class="dw-submit" id="dishSubmit" onclick="submitDish()" style="border-radius:12px;padding:10px 18px;white-space:nowrap">Add ✦</button>
-        </div>
+        <input class="dw-input" id="dishInput" type="text" placeholder="e.g. Maggi at 2am, Biryani after cricket, Chai on the terrace…" maxlength="80" autocomplete="off" style="font-size:.95rem;padding:4px 0">
+      </div>
+      <div class="dw-submit-wrap" style="margin-top:10px;text-align:center">
+        <button class="dw-submit" id="dishSubmit" onclick="submitDish()" style="width:100%;border-radius:14px;padding:14px 22px;font-size:.95rem">Add to the Memory Wall ✦</button>
       </div>
       <p class="dw-hint">No sign-up. Your name is optional — only the dish is required.</p>
     </div>
