@@ -348,8 +348,10 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
 .tier-proof.hot .proof-dot{background:var(--orange)}
 
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
+<script>emailjs.init("4teHwgEAg1df4Jzcb");</script>
 
 <!-- NAV -->
 <nav id="nav">
@@ -1053,41 +1055,57 @@ setTimeout(() => {
     document.getElementById('if-tier').value = selectedTier;
   };
 
-  window.submitInterest = function() {
-    const name  = (document.getElementById('if-name')  || {}).value.trim();
-    const cc    = (document.getElementById('if-cc')    || {}).value || '+91';
-    const phone = (document.getElementById('if-phone') || {}).value.trim();
-    const email = (document.getElementById('if-email') || {}).value.trim();
-    const city  = (document.getElementById('if-city')  || {}).value.trim();
-    const msg   = (document.getElementById('if-message') || {}).value.trim();
-    const tier  = selectedTier;
+  window.submitInterest = async function() {
+    const name     = (document.getElementById('if-name')    || {}).value.trim();
+    const cc       = (document.getElementById('if-cc')      || {}).value || '+91';
+    const phone    = (document.getElementById('if-phone')   || {}).value.trim();
+    const email    = (document.getElementById('if-email')   || {}).value.trim();
+    const city     = (document.getElementById('if-city')    || {}).value.trim();
+    const message  = (document.getElementById('if-message') || {}).value.trim();
+    const tier     = selectedTier;
 
     // Mandatory validation
-    if (!name)  { highlightField('if-name',  'Please enter your name.');   return; }
-    if (!phone) { highlightField('if-phone', 'Please enter your phone number.'); return; }
-    if (!city)  { highlightField('if-city',  'Please enter your city.');   return; }
+    if (!name)  { highlightField('if-name',  'Please enter your name.');          return; }
+    if (!phone) { highlightField('if-phone', 'Please enter your phone number.');  return; }
+    if (!city)  { highlightField('if-city',  'Please enter your city.');          return; }
     if (!tier)  { highlightTiers(); return; }
 
-    // Build WhatsApp message with all details
+    const btn = document.querySelector('#interest-form button[onclick]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
     const fullPhone = cc + ' ' + phone;
-    const lines = [
-      "👋 Hey Raghav, I came across Spicy Studio and I'm interested!",
-      '',
-      '📋 *My details:*',
-      '• Name: ' + name,
-      '• Phone: ' + fullPhone,
-      email ? '• Email: ' + email : null,
-      '• City: ' + city,
-      msg ? '• Message: ' + msg : null,
-      '• Tier considering: ' + tier,
-      '',
-      'Looking forward to hearing from you!'
-    ].filter(l => l !== null).join('\n');
 
-    const waUrl = 'https://wa.me/919987015874?text=' + encodeURIComponent(lines);
-    window.open(waUrl, '_blank');
+    // ── Send email via EmailJS ──────────────────────────────────────────────
+    try {
+      await emailjs.send('service_lwrljiw', 'template_p7a550n', {
+        from_name:    name,
+        phone:        fullPhone,
+        email:        email    || 'Not provided',
+        city:         city,
+        tier:         tier,
+        message:      message  || 'No message',
+        reply_to:     email    || '89.raghavfx@gmail.com',
+        submitted_at: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+      });
+    } catch(emailErr) {
+      console.error('EmailJS error:', emailErr);
+    }
 
-    // Show success state
+    // ── Also save to Firebase ───────────────────────────────────────────────
+    try {
+      const interestRef = ref(db, 'interests');
+      await push(interestRef, {
+        name, phone: fullPhone,
+        email: email || '',
+        city, tier,
+        message: message || '',
+        ts: Date.now()
+      });
+    } catch(fbErr) {
+      console.error('Firebase interest save error:', fbErr);
+    }
+
+    // ── Show success ────────────────────────────────────────────────────────
     document.getElementById('interest-form').style.display    = 'none';
     document.getElementById('interest-success').style.display = 'block';
   };
