@@ -860,6 +860,11 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
   const db        = getDatabase(app);
   const wallRef   = ref(db, 'dishes'); // all memories live here
 
+  // ── Expose Firebase primitives so non-module scripts can use them ─────────
+  window._fbDb   = db;
+  window._fbRef  = ref;
+  window._fbPush = push;
+
   // ── HELPERS ───────────────────────────────────────────────────────────────
   function escHtml(str) {
     return String(str)
@@ -1077,15 +1082,21 @@ setTimeout(() => {
 
     // ── Send email via EmailJS ──────────────────────────────────────────────
     try {
+      const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const fullMessage = [
+        'Phone: '   + fullPhone,
+        'City: '    + city,
+        'Tier: '    + tier,
+        email   ? 'Email: '   + email   : null,
+        message ? 'Message: ' + message : null
+      ].filter(Boolean).join('\n');
+
       await emailjs.send('service_lwrljiw', 'template_p7a550n', {
-        from_name:    name,
-        phone:        fullPhone,
-        email:        email    || 'Not provided',
-        city:         city,
-        tier:         tier,
-        message:      message  || 'No message',
-        reply_to:     email    || '89.raghavfx@gmail.com',
-        submitted_at: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+        name:    name,
+        email:   email || '',
+        time:    timestamp,
+        title:   'New Interest — ' + tier,
+        message: fullMessage
       });
     } catch(emailErr) {
       console.error('EmailJS error:', emailErr);
@@ -1093,14 +1104,16 @@ setTimeout(() => {
 
     // ── Also save to Firebase ───────────────────────────────────────────────
     try {
-      const interestRef = ref(db, 'interests');
-      await push(interestRef, {
-        name, phone: fullPhone,
-        email: email || '',
-        city, tier,
-        message: message || '',
-        ts: Date.now()
-      });
+      if (window._fbDb && window._fbRef && window._fbPush) {
+        const interestRef = window._fbRef(window._fbDb, 'interests');
+        await window._fbPush(interestRef, {
+          name, phone: fullPhone,
+          email: email || '',
+          city, tier,
+          message: message || '',
+          ts: Date.now()
+        });
+      }
     } catch(fbErr) {
       console.error('Firebase interest save error:', fbErr);
     }
