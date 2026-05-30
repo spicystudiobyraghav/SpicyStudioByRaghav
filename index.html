@@ -739,9 +739,24 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
             </div>
             <div>
               <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">Phone / WhatsApp *</label>
-              <input id="if-phone" type="tel" placeholder="+91 98765 43210" maxlength="20"
-                style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s"
-                onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'">
+              <div style="display:flex;gap:6px">
+                <select id="if-cc" style="background:#1a1108;border:1px solid var(--border);border-radius:10px;padding:11px 8px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;flex-shrink:0;cursor:pointer;transition:border-color .2s"
+                  onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'">
+                  <option value="+91">🇮🇳 +91</option>
+                  <option value="+1">🇺🇸 +1</option>
+                  <option value="+44">🇬🇧 +44</option>
+                  <option value="+61">🇦🇺 +61</option>
+                  <option value="+65">🇸🇬 +65</option>
+                  <option value="+971">🇦🇪 +971</option>
+                  <option value="+49">🇩🇪 +49</option>
+                  <option value="+33">🇫🇷 +33</option>
+                  <option value="+81">🇯🇵 +81</option>
+                  <option value="+other">Other</option>
+                </select>
+                <input id="if-phone" type="tel" placeholder="98765 43210" maxlength="15"
+                  style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;flex:1;min-width:0"
+                  onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'">
+              </div>
             </div>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
@@ -752,14 +767,14 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
                 onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'">
             </div>
             <div>
-              <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">City</label>
+              <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">City *</label>
               <input id="if-city" type="text" placeholder="Bangalore" maxlength="40"
                 style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s"
                 onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'">
             </div>
           </div>
           <div style="margin-bottom:20px">
-            <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">Which tier feels right for you?</label>
+            <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">Which tier feels right? *</label>
             <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" id="tier-selector">
               <div class="tier-opt" data-val="Studio Supporter (₹2k–5k)" onclick="selectTier(this)"
                 style="background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:all .2s;font-size:.78rem;color:var(--muted);line-height:1.4">
@@ -779,6 +794,12 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
               </div>
             </div>
             <input type="hidden" id="if-tier" value="">
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:.7rem;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px">Anything you want to ask or say? <span style="opacity:.6">(optional)</span></label>
+            <textarea id="if-message" placeholder="Ask anything, share what excites you, or just say hi…" maxlength="400" rows="3"
+              style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.9rem;outline:none;transition:border-color .2s;resize:vertical;line-height:1.6"
+              onfocus="this.style.borderColor='rgba(232,98,26,.6)'" onblur="this.style.borderColor='var(--border)'"></textarea>
           </div>
           <button onclick="submitInterest()"
             style="width:100%;background:linear-gradient(135deg,var(--orange),var(--red));color:#fff;border:none;border-radius:12px;padding:14px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 4px 16px rgba(232,98,26,.3)">
@@ -1032,36 +1053,68 @@ setTimeout(() => {
     document.getElementById('if-tier').value = selectedTier;
   };
 
-  window.submitInterest = async function() {
+  window.submitInterest = function() {
     const name  = (document.getElementById('if-name')  || {}).value.trim();
+    const cc    = (document.getElementById('if-cc')    || {}).value || '+91';
     const phone = (document.getElementById('if-phone') || {}).value.trim();
     const email = (document.getElementById('if-email') || {}).value.trim();
     const city  = (document.getElementById('if-city')  || {}).value.trim();
+    const msg   = (document.getElementById('if-message') || {}).value.trim();
     const tier  = selectedTier;
 
-    if (!name)  { alert('Please add your name.'); return; }
-    if (!phone) { alert('Please add a phone or WhatsApp number.'); return; }
+    // Mandatory validation
+    if (!name)  { highlightField('if-name',  'Please enter your name.');   return; }
+    if (!phone) { highlightField('if-phone', 'Please enter your phone number.'); return; }
+    if (!city)  { highlightField('if-city',  'Please enter your city.');   return; }
+    if (!tier)  { highlightTiers(); return; }
 
-    const btn = document.querySelector('#interest-form button');
-    btn.disabled = true;
-    btn.textContent = 'Sending…';
+    // Build WhatsApp message with all details
+    const fullPhone = cc + ' ' + phone;
+    const lines = [
+      "👋 Hey Raghav, I came across Spicy Studio and I'm interested!",
+      '',
+      '📋 *My details:*',
+      '• Name: ' + name,
+      '• Phone: ' + fullPhone,
+      email ? '• Email: ' + email : null,
+      '• City: ' + city,
+      msg ? '• Message: ' + msg : null,
+      '• Tier considering: ' + tier,
+      '',
+      'Looking forward to hearing from you!'
+    ].filter(l => l !== null).join('\n');
 
-    try {
-      const interestRef = ref(db, 'interests');
-      await push(interestRef, {
-        name, phone, email: email || '', city: city || '',
-        tier: tier || 'Not specified',
-        ts: Date.now()
-      });
-      document.getElementById('interest-form').style.display    = 'none';
-      document.getElementById('interest-success').style.display = 'block';
-    } catch(err) {
-      console.error('Interest form error:', err);
-      btn.disabled = false;
-      btn.textContent = "Let Raghav Know I'm Interested →";
-      alert('Something went wrong. Please try WhatsApp instead.');
-    }
+    const waUrl = 'https://wa.me/919987015874?text=' + encodeURIComponent(lines);
+    window.open(waUrl, '_blank');
+
+    // Show success state
+    document.getElementById('interest-form').style.display    = 'none';
+    document.getElementById('interest-success').style.display = 'block';
   };
+
+  function highlightField(id, msg) {
+    const el = document.getElementById(id);
+    if (el) {
+      el.style.borderColor = 'var(--red)';
+      el.focus();
+      el.setAttribute('placeholder', msg);
+      setTimeout(() => {
+        el.style.borderColor = 'var(--border)';
+        // restore original placeholder
+        const placeholders = {'if-name':'Priya Sharma','if-phone':'98765 43210','if-city':'Bangalore'};
+        if (placeholders[id]) el.setAttribute('placeholder', placeholders[id]);
+      }, 2500);
+    }
+  }
+
+  function highlightTiers() {
+    const sel = document.getElementById('tier-selector');
+    if (sel) {
+      sel.style.outline = '2px solid var(--red)';
+      sel.style.borderRadius = '12px';
+      setTimeout(() => { sel.style.outline = 'none'; }, 2500);
+    }
+  }
 
 </script>
 
