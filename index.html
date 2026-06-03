@@ -225,7 +225,7 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
 .dw-hdr h2 em{font-style:italic;color:var(--warm)}
 .dw-hdr p{font-size:1rem;color:var(--muted);max-width:520px;margin:0 auto;line-height:1.8}
 
-.dw-input-wrap{max-width:560px;margin:0 auto 64px;position:relative}
+.dw-input-wrap{max-width:560px;margin:0 auto 56px;position:relative}
 .dw-input-inner{display:flex;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:100px;padding:6px 6px 6px 24px;transition:border-color .25s;align-items:center}
 .dw-input-inner:focus-within{border-color:rgba(232,98,26,.55);box-shadow:0 0 0 3px rgba(232,98,26,.08)}
 .dw-input{background:transparent;border:none;outline:none;color:var(--cream);font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:400;flex:1;min-width:0}
@@ -235,9 +235,9 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
 .dw-submit:disabled{opacity:.5;cursor:default;transform:none}
 .dw-hint{text-align:center;font-size:.78rem;color:var(--muted);margin-top:10px;opacity:.7}
 
-.dw-wall{column-count:4;column-gap:14px}
-.dw-chip{break-inside:avoid;display:block;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;margin-bottom:14px;transition:all .3s;cursor:default}
-.dw-chip:hover{border-color:rgba(232,98,26,.4);background:#1e1208;transform:translateY(-2px)}
+.dw-wall{position:relative;width:100%;min-height:400px}
+.dw-chip{position:absolute;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 18px;transition:transform .3s,border-color .3s,box-shadow .3s;cursor:default;width:var(--chip-w,180px);transform:rotate(var(--chip-r,0deg))}
+.dw-chip:hover{border-color:rgba(232,98,26,.4);background:#1e1208;transform:rotate(var(--chip-r,0deg)) translateY(-4px) scale(1.03);box-shadow:0 12px 36px rgba(0,0,0,.5);z-index:10}
 .dw-chip .dish-name{font-family:'Playfair Display',serif;font-style:italic;font-size:1.05rem;color:var(--cream);line-height:1.3;margin-bottom:4px}
 .dw-chip .dish-time{font-size:.68rem;color:var(--muted);letter-spacing:.04em;font-family:'Space Mono',monospace}
 .dw-chip.new-entry{border-color:var(--orange);background:linear-gradient(135deg,rgba(232,98,26,.12),rgba(212,137,26,.08));animation:popIn .4s ease}
@@ -604,7 +604,7 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
           <li>Invite-only evenings and tasting sessions</li>
           <li>Bring a friend to every community event</li>
           <li>Full contribution returned in cash at profitability</li>
-          <li>2% share of monthly profits for 12 months after break-even</li>
+          <li>1% share of monthly profits for 12 months after break-even</li>
         </ul>
         <div class="tier-footer">The core of what Spicy Studio is — <strong>this is where it's really built.</strong></div>
         <div class="tier-proof hot"><span class="proof-dot"></span>Most popular — spots filling this week</div>
@@ -622,7 +622,7 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
           <li>Behind-the-scenes access to the full journey</li>
           <li>Your name physically on the space</li>
           <li>Full contribution returned in cash at profitability</li>
-          <li>5% share of monthly profits for 24 months after break-even</li>
+          <li>2% share of monthly profits for 24 months after break-even</li>
         </ul>
         <div class="tier-footer">You're not just supporting this. <strong>You're shaping it.</strong></div>
         <div class="tier-proof"><span class="proof-dot"></span>2 founding circle spots taken</div>
@@ -640,7 +640,7 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
           <li>Deepest personal involvement in every decision</li>
           <li>Inner circle access — always</li>
           <li>Full contribution returned in cash at profitability</li>
-          <li>10% share of monthly profits for 36 months after break-even</li>
+          <li>5% share of monthly profits for 36 months after break-even</li>
         </ul>
         <div class="tier-footer" style="color:var(--gold)">You put real weight behind this. As Spicy Studio grows, <strong style="color:var(--warm)">you naturally stay part of the journey and everything good that comes from it.</strong></div>
       </div>
@@ -920,10 +920,49 @@ footer{background:var(--black);border-top:1px solid var(--border);padding:38px 4
     });
     entries.sort((a, b) => b.ts - a.ts); // newest first
 
+    // deterministic-random from push key so positions don't jump on re-render
+    function seededRand(seed, min, max) {
+      let h = 0;
+      for (let i = 0; i < seed.length; i++) { h = (Math.imul(31, h) + seed.charCodeAt(i)) | 0; }
+      const t = Math.abs(h) / 2147483647;
+      return min + t * (max - min);
+    }
+
+    // Build chips then do a JS layout pass so they don't overlap badly
+    const chipsData = entries.map((d, i) => {
+      const seed  = d.key || (d.dish + d.ts);
+      const rot   = seededRand(seed + 'r', -8, 8).toFixed(1);
+      const w     = Math.round(seededRand(seed + 'w', 150, 220));
+      return { d, i, rot, w, seed };
+    });
+
+    // Simple bin-packing: place in rows with random x offsets
+    const containerW = wall.offsetWidth || 900;
+    const margin = 14;
+    let rowX = 0, rowY = 0, rowH = 0;
+    const placed = chipsData.map(({ d, i, rot, w, seed }) => {
+      const h = 70 + (d.name ? 12 : 0);
+      // random vertical jitter within row
+      const jitter = seededRand(seed + 'j', -18, 18);
+      if (rowX + w + margin > containerW) {
+        rowY += rowH + margin + 10;
+        rowX = 0;
+        rowH = 0;
+      }
+      const x = rowX + seededRand(seed + 'x', -8, 8);
+      const y = rowY + jitter;
+      rowX += w + margin + seededRand(seed + 'g', -6, 14);
+      rowH = Math.max(rowH, h + Math.abs(jitter));
+      return { d, i, rot, w, x, y };
+    });
+
+    const totalH = placed.reduce((m, p) => Math.max(m, p.y + 90), 0) + 60;
+
     wall.innerHTML =
-      '<div class="dw-wall">' +
-      entries.map((d, i) =>
-        `<div class="dw-chip${i === 0 ? ' new-entry' : ''}">
+      `<div class="dw-wall" style="min-height:${totalH}px">` +
+      placed.map(({ d, i, rot, w, x, y }) =>
+        `<div class="dw-chip${i === 0 ? ' new-entry' : ''}"
+          style="--chip-r:${rot}deg;--chip-w:${w}px;left:${x}px;top:${y}px">
            <div class="dish-name">${escHtml(d.dish)}</div>
            <div class="dish-time">${d.name ? '— ' + escHtml(d.name) + ' &nbsp;·&nbsp; ' : ''}${relativeTime(d.ts)}</div>
          </div>`
